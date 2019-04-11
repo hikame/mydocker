@@ -1,15 +1,14 @@
 package subsystems
 
 import (
+	"bufio"
 	"fmt"
-	"strings"
 	"os"
 	"path"
-	"bufio"
+	"strings"
 )
 
-
-func FindCgroupMountpoint(subsystem string) string {
+func FindCgroupMountpoint(subsystem string) string { // 基于Mount信息，查找目标subsystem的mount目录
 	f, err := os.Open("/proc/self/mountinfo")
 	if err != nil {
 		return ""
