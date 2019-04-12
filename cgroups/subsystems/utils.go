@@ -34,6 +34,7 @@ func FindCgroupMountpoint(subsystem string) string { // 基于Mount信息，查�
 
 func GetCgroupPath(subsystem string, cgroupPath string, autoCreate bool) (string, error) {
 	cgroupRoot := FindCgroupMountpoint(subsystem)
+	fmt.Printf("%s: %s\n", subsystem, cgroupRoot)
 	if _, err := os.Stat(path.Join(cgroupRoot, cgroupPath)); err == nil || (autoCreate && os.IsNotExist(err)) {
 		if os.IsNotExist(err) {
 			if err := os.Mkdir(path.Join(cgroupRoot, cgroupPath), 0755); err == nil {
