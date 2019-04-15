@@ -1,10 +1,11 @@
 package container
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"os"
 	"os/exec"
 	"syscall"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
@@ -13,6 +14,7 @@ func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
 		log.Errorf("New pipe error %v", err)
 		return nil, nil
 	}
+
 	cmd := exec.Command("/proc/self/exe", "init")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS |
