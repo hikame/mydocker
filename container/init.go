@@ -2,13 +2,14 @@ package container
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 func RunContainerInitProcess() error {
@@ -52,7 +53,10 @@ func setUpMount() {
 		return
 	}
 	log.Infof("Current location is %s", pwd)
-	pivotRoot(pwd)
+	if err := pivotRoot(pwd); err != nil {
+		log.Errorf("pivotRoot error: %v", err)
+		return
+	}
 
 	//mount proc
 	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
@@ -62,6 +66,13 @@ func setUpMount() {
 }
 
 func pivotRoot(root string) error {
+	/* ref: https://github.com/xianlubird/mydocker/issues/13
+	我的是ubuntu16，所以跑代码在pivot_root系统调用那里报错Invalid argument，然后程序退出后，/proc有问题,其他issue有提到，翻了下runc的代码，发现是因为/这个mount point的标记位是share, 所以pivot_root切换rootfs失败，加上后面重新mount /proc的时候，传递到host的/proc，使host的也有问题，在mount隔离下，是不应该有share的mount point的.
+	*/
+	if err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
+		return fmt.Errorf("make parent mount private error: %v", err)
+	}
+
 	/**
 	  为了使当前root的老 root 和新 root 不在同一个文件系统下，我们把root重新mount了一次
 	  bind mount是把相同的内容换了一个挂载点的挂载方法
@@ -71,7 +82,7 @@ func pivotRoot(root string) error {
 	}
 	// 创建 rootfs/.pivot_root 存储 old_root
 	pivotDir := filepath.Join(root, ".pivot_root")
-	if err := os.Mkdir(pivotDir, 0777); err != nil {
+	if err := os.MkdirAll(pivotDir, 0777); err != nil {
 		return err
 	}
 	// pivot_root 到新的rootfs, 现在老的 old_root 是挂载在rootfs/.pivot_root
